@@ -23,50 +23,7 @@ ISR(SPI_STC_vect) { // this is enabled in with the SPCR register’s “SPI
     return SPDR;
 }
  
-//enum sm_1  {wait, s0, s1 } sm1_state;
-//enum sm_3 {sm3_wait, s0, s1, s2, s3, s4, s5, s6 } sm3_state;
-//enum sm_4 {wait, s0, s1, s2, s3, s4, s5, s6 } sm4_state;
-/*
-int SMP1(int sm1_state)
-{  
-    //Transitions
-    switch(sm1_state)
-    {
-        case wait:
-            sm1_state = s0;
-           
-        case s0:
-            sm1_state = s1;
-       
-        case s1:
-            sm1_state = s0;
-       
-        default:
-            break;
-    }
-   
-    //Actions
-    switch(sm1_state)
-    {
-        case wait:
-            break;
-       
-        case s0:
-            PORTA = 0xF0;
-            break;
-       
-        case s1:
-            PORTA = 0x0F;
-            break;
-           
-        default:
-            break;
-    }
-   
-   
-}
- 
-*/
+
 enum sm_2 {sm2_a, sm2_b};
 int SMP2(int state)
 {
@@ -102,38 +59,7 @@ int SMP2(int state)
     }
     return state;
 }
-/*
-void SMP3()
-{
-    //Transitions
-    switch(sm3_state)
-    {
-       
-    }
-   
-    //Actions
-    switch(sm3_state)
-    {
-       
-    }  
-}
-void SMP4()
-{
-    //Transitions
-    switch(sm4_state)
-    {
-       
-    }
-   
-    //Actions
-    switch(sm4_state)
-    {
-       
-    }  
-   
-}
-*/
- 
+
 void getPattern()
 {
     pattern = (receivedData & 0xF0); //4 Possible Patterns
@@ -211,12 +137,7 @@ int main(void)
     tasks[i].period = 500;
     tasks[i].elapsedTime = tasks[i].period;
     tasks[i].TickFct = &SMP2;
-    /*
-    tasks[i].state = -1;
-    tasks[i].period = 1000;
-    tasks[i].elapsedTime = tasks[i].period;
-    tasks[i].TickFct = &TickFct_ThreeLEDs;
-    */
+   
     TimerSet(50); // value set should be GCD of all tasks
     TimerOn();
  
