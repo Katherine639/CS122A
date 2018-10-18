@@ -1,0 +1,329 @@
+#include <avr/io.h>
+#include <avr/interrupt.h>
+#include "Timer.h"
+
+unsigned char receivedData;
+unsigned char output1;
+unsigned char output2;
+unsigned char output3;
+unsigned char output4;
+unsigned char pattern;
+unsigned char desiredSpeed;
+unsigned char speeds[6] = {40, 20, 10, 5, 2, 1};
+
+// Servant code ========================================================================================
+void SPI_ServantInit(void) {
+	//set DDRB to have MISO line as output and MOSI, SCK, and SS as input
+	DDRB = 0x40; // 0x40 = 0b0100 0000
+	//set SPCR register to enable SPI and enable SPI interrupt (pg. 168)
+	SPCR |= (1 << SPE) | (1 << SPIE);
+	//make sure global interrupts are enabled on SREG register (pg. 9)
+	sei();
+}
+ISR (SPI_STC_vect) { // this is enabled in with the SPCR register's 
+					 // "SPI Interrupt Enable"
+	// SPDR contains the received data, e.g. unsigned char receivedData = SPDR;
+	receivedData = SPDR;
+}
+// End Servant code ====================================================================================
+
+// Synch SM's ==========================================================================================
+enum P1_States {start1, init1, wait1, blink1} P1_State;
+void Tick_pattern1();
+
+enum P2_States {start2, init2, wait2, blink2} P2_State;
+void Tick_pattern2();
+
+enum P3_States {start3, init3, wait3, blink3} P3_State;
+void Tick_pattern3();
+
+enum P4_States {start4, init4, wait4, blink4} P4_State;
+void Tick_pattern4();
+
+enum OP_States {init} OP_State;
+void Tick_Output();
+// End Synch SM's ======================================================================================
+
+void TimerISR() {
+	TimerFlag = 1;
+}
+
+void storeInput() {
+	// upper 4 bits are pattern
+	pattern = (receivedData >> 4);
+	
+	// lower 4 bits are desiredSpeed
+	// (subtracts one for indexing in array of speeds)
+	desiredSpeed = (0x0F & receivedData) - 1;
+}
+
+int main(void)
+{
+	DDRD = 0xFF; PORTD = 0x00;
+	
+	SPI_ServantInit();
+	TimerSet(6);
+	TimerOn();
+	
+	P1_State = start1;
+	P2_State = start2;
+	P2_State = start3;
+	P2_State = start4;
+	
+    while (1) 
+    {
+		receivedData = 0x42;
+		
+		// store desired pattern/speed
+		storeInput();
+
+		Tick_pattern1();
+		Tick_pattern2();
+		Tick_pattern3();
+		Tick_pattern4();
+		Tick_Output();
+		
+		while (!TimerFlag);
+		TimerFlag = 0;
+    }
+}
+
+void Tick_pattern1() {
+	static unsigned char counter1;
+	static unsigned char waitTime;
+	switch (P1_State) { // transitions
+		case start1:
+			P1_State = init1;
+			break;
+		case init1:
+			P1_State = wait1;
+			break;
+		case wait1:
+			// valid desiredSpeed selection is no greater than 6
+			// only update waitTime if is valid
+			if (desiredSpeed < 6) {
+				waitTime = speeds[desiredSpeed];
+			}
+			// blink only after waiting desired
+			// amount of time
+			if ( counter1 < speeds[desiredSpeed] ){
+				P1_State = wait1;
+			}
+			else {
+				P1_State = blink1;
+			}
+			break;
+		case blink1:
+			P1_State = wait1;
+			break;
+		default:
+			P1_State = init;
+			break;
+	}
+	
+	switch (P1_State) { // actions
+		case init1:
+			output1 = 0xF0;
+			counter1 = 0;
+			break;
+		case wait1:
+			++counter1;
+			break;
+		case blink1:
+			// flip 0xF0 to 0x0F and vice versa
+			// 0b11110000 <-> 0b00001111
+			output1 = ~output1; 
+			// reset counter
+			counter1 = 0;
+			break;
+		default:
+			break;
+	}
+}
+void Tick_pattern2() {
+	static unsigned char counter2;
+	static unsigned char waitTime;
+	switch (P2_State) { // transitions
+		case start2:
+		P2_State = init2;
+		break;
+		case init2:
+		P2_State = wait2;
+		break;
+		case wait2:
+		// valid desiredSpeed selection is no greater than 6
+		// only update waitTime if is valid
+		if (desiredSpeed < 6) {
+			waitTime = speeds[desiredSpeed];
+		}
+		// blink only after waiting desired amount of time
+		if ( counter2 < waitTime ){
+			P2_State = wait2;
+		}
+		else {
+			P2_State = blink2;
+		}
+		break;
+		case blink2:
+		P2_State = wait2;
+		break;
+		default:
+		P2_State = init2;
+		break;
+	}
+	
+	switch (P2_State) { // actions
+		case init2:
+		output2 = 0xAA;
+		counter2 = 0;
+		break;
+		case wait2:
+		++counter2;
+		break;
+		case blink2:
+		// flip 0xAA to 0x55 and vice versa
+		// 0b10101010 <-> 0b01010101
+		output2 = ~output2;
+		// reset counter
+		counter2 = 0;
+		break;
+		default:
+		break;
+	}
+}
+void Tick_pattern3() {
+	static unsigned char counter3;
+	static unsigned char waitTime;
+	static unsigned char goingUp;
+	
+	switch (P3_State) { // transitions
+		case start3:
+			P3_State = init3;
+			break;
+		case init3:
+			P3_State = wait3;
+			break;
+		case wait3:
+			// valid desiredSpeed selection is no greater than 6
+			// only update waitTime if is valid
+			if (desiredSpeed < 6) {
+				waitTime = speeds[desiredSpeed];
+			}
+			// blink only after waiting desired amount of time
+			if ( counter3 < waitTime ){
+				P3_State = wait3;
+			}
+			else {
+				P3_State = blink3;
+			}
+			break;
+		case blink3:
+		P3_State = wait3;
+		break;
+		default:
+		P3_State = init3;
+		break;
+	}
+	
+	switch (P3_State) { // actions
+		case init3:
+			output3 = 0x01;
+			counter3 = 0;
+			goingUp = 1;
+			break;
+		case wait3:
+			++counter3;
+			break;
+		case blink3:
+			// bouncing LEDs pattern:
+			// 10000 -> 01000 -> ... -> 00001 -> 00010 -> ...
+			// FIXME(?): maybe make this more concise (it works tho)
+			if (goingUp) {
+				if (output3 == 0x80) {
+					goingUp = 0;
+					output3 = output3 >> 1;
+				}
+				else {
+					output3 = output3 << 1;
+				}
+			}
+			else {
+				if (output3 == 1) {
+					goingUp = 1;
+					output3 = output3 << 1;
+				}
+				else{
+					output3 = output3 >> 1;
+				}
+			}
+			// reset counter
+			counter3 = 0;
+			break;
+		default:
+			break;
+	}
+}
+void Tick_pattern4() {
+	static unsigned char counter4;
+	static unsigned char waitTime;
+	switch (P4_State) { // transitions
+		case start4:
+			P4_State = init4;
+			break;
+		case init4:
+			P4_State = wait4;
+			break;
+		case wait4:
+			// valid desiredSpeed selection is no greater than 6
+			// only update waitTime if is valid
+			if (desiredSpeed < 6) {
+				waitTime = speeds[desiredSpeed];
+			}
+			// blink only after waiting desired amount of time
+			if ( counter4 < waitTime ){
+				P4_State = wait4;
+			}
+			else {
+				P4_State = blink4;
+			}
+			break;
+		case blink4:
+			P4_State = wait4;
+			break;
+		default:
+			P4_State = init4;
+			break;
+	}
+	
+	switch (P4_State) { // actions
+		case init4:
+			output4 = 0xCC;
+			counter4 = 0;
+			break;
+		case wait4:
+			++counter4;
+			break;
+		case blink4:
+			// alternate 0b11001100 <-> 0b00110011
+			output4 = ~output4;
+			// reset counter
+			counter4 = 0;
+			break;
+		default:
+			break;
+	}
+}
+void Tick_Output() {
+	if (pattern == 1) {
+		PORTD = output1;
+	}
+	else if (pattern == 2) {
+		PORTD = output2;
+	}
+	else if (pattern == 3) {
+		PORTD = output3;
+	}
+	else {
+		PORTD = output4;
+	}
+}
