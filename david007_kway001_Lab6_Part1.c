@@ -5,7 +5,7 @@
 #include "croutine.h"
 #include "bit.h"
 
-enum DemoStates(init, shift_up, shift_down, wait_up, wait_down) LEDstate;
+enum DemoStates{init, shift_up, shift_down, wait_up, wait_down] LEDstate;
 
 void transmit_data(unsigned char data)
 {
@@ -20,7 +20,7 @@ void transmit_data(unsigned char data)
 		// set SRCLK = 1. Rising edge shifts next bit of data into the shift register
 		PORTC |= 0x04;
 	}
-	// set RCLK = 1. Rising edge copies data from the “Shift” register to the “Storage” register
+	// set RCLK = 1. Rising edge copies data from the â€œShiftâ€ register to the â€œStorageâ€ register
 	PORTC |= 0x02;
 	// clears all lines in preparation of a new transmission
 	PORTC = 0x00;
@@ -38,7 +38,7 @@ void transmit_data1(unsigned char data)
 		// set SRCLK = 1. Rising edge shifts next bit of data into the shift register
 		PORTD |= 0x04;
 	}
-	// set RCLK = 1. Rising edge copies data from the “Shift” register to the “Storage” register
+	// set RCLK = 1. Rising edge copies data from the â€œShiftâ€ register to the â€œStorageâ€ register
 	PORTD |= 0x02;
 	// clears all lines in preparation of a new transmission
 	PORTD = 0x00;
