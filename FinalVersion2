@@ -90,6 +90,24 @@ void Receive_Tick()
 }
 void Bluetooth_Tick()
 {
+switch(blueState) // transitions
+	{
+		case wait:
+		if((temperature != 0x00) && (heartbeat != 0x00))
+		blueState = send;
+		else
+		blueState = wait;
+		break;
+		case send:
+		if((temperature == 0x00) || (heartbeat == 0x00))
+		blueState = wait;
+		else
+		blueState = send;
+		break;
+		default:
+		blueState = wait;
+		break;
+	}
 	
 	switch(blueState) //actions
 	
