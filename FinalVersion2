@@ -109,6 +109,7 @@ void Bluetooth_Tick()
 		break;
 	}
 	switch(blueState) //actions
+	
 	{
 		case wait:
 		break;
