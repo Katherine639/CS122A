@@ -275,4 +275,5 @@ int main(void)
 	
 	StartFinalPulse(1);
 	vTaskStartScheduler();
+	
 }
