@@ -64,6 +64,22 @@ int heartConversion(int heartRate)
 	temp = heartRate * 12;
 	return temp;
 }
+int degreeConversion(unsigned short temperatureSensor, unsigned short temperatureSensor2)
+{
+	float temp, temp2 = 0.0;
+	int realTemp = 0;
+	temp = (temperatureSensor * 500) / 1024;
+	temp2 = (temperatureSensor2 * 500) / 1024;
+	realTemp = (temp + temp2) / 2;
+	return realTemp;
+}
+void Set_A2D_PIN(unsigned char pinNum)
+{
+	ADMUX = (pinNum <= 0x07) ? pinNum : ADMUX;
+	// Allow channel to stabilize
+	static unsigned char i = 0;
+	for(i = 0; i < 15; ++i){asm("nop");}
+}
 
 void USART_Tick()
 {
