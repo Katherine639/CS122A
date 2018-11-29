@@ -28,7 +28,8 @@ enum USARTCommunication{wait1, send} usartState;
 	
 void ADC_init()
 {
-@@ -40,6 +41,12 @@ void ADC_init()
+ 	ADCSRA |= (1 << ADEN) | (1 << ADSC) | (1 << ADATE);
+ 	// ADEN: Enables analog-to-digital conversion
 	// ADSC: Starts analog-to-digital conversion
 	// ADATE: Enables auto-triggering, allowing for constant analog to digital conversions.
 }
@@ -41,7 +42,12 @@ void convert()
 void sendData(unsigned char x)
 {
 	unsigned char hasSent = 0;
-@@ -52,32 +59,30 @@ void sendData(unsigned char x)
+ 	while(!hasSent)
+ 	{
+ 		if(USART_IsSendReady(0))
+ 		{
+ 			USART_Send(x, 0);
+ 			hasSent = 1;
 		}
 	}
 }
@@ -88,7 +94,34 @@ int degreeConversion(unsigned short temperatureSensor, unsigned short temperatur
 	realTemp = (temp + temp2) / 2;
 	return realTemp;
 }
-@@ -112,10 +117,10 @@ void USART_Tick()
+ void Set_A2D_PIN(unsigned char pinNum)
+ {
+ 	ADMUX = (pinNum <= 0x07) ? pinNum : ADMUX;
+ 	// Allow channel to stabilize
+ 	static unsigned char i = 0;
+ 	for(i = 0; i < 15; ++i){asm("nop");}
+ }
+ void USART_Tick()
+ {
+ 	switch(usartState)
+ 	{
+ 		case wait:
+ 			if(power == 0)
+ 				usartState = wait;
+ 			else if(power == 1)
+ 				usartState = send;
+ 			break;
+ 		case send:
+ 			if(power == 1)
+ 				usartState = send;
+ 			else if(power == 0)
+ 				usartState = wait;
+ 			break;
+ 		default:
+ 			break;
+ 	}
+ 	switch(usartState)
+ 	{
 		case wait:
 			break;
 		case send:
@@ -103,7 +136,19 @@ int degreeConversion(unsigned short temperatureSensor, unsigned short temperatur
 			break;
 		default: 
 			break;
-@@ -135,8 +140,7 @@ void Reflectance_Tick()
+ 	}
+ }
+ void Reflectance_Tick()
+ {
+ 	switch(state) //transitions
+ 	{
+ 		case read:
+ 			state = read;
+ 			break;
+ 		default:
+ 			state = read;
+ 			break;
+ 	}
 	switch(state) // actions
 	{
 		case read:
@@ -113,7 +158,32 @@ int degreeConversion(unsigned short temperatureSensor, unsigned short temperatur
 			if(reflectSensor == 0x0000)
 				power = 0;
 			else if(reflectSensor != 0x0000)
-@@ -169,16 +173,22 @@ void Pulse_Tick()
+ 				power = 1;
+ 			break;
+ 		default:
+ 			break;
+ 	}
+ }
+ void Pulse_Tick()
+ {
+ 	switch(pulseState) // transitions
+ 	{
+ 		case hold:
+ 			if(power == 0)
+ 				pulseState = hold;
+ 			else if(power == 1)
+ 				pulseState = process;
+ 			break;
+ 		case process:
+ 			if(power == 1)
+ 				pulseState = process;
+ 			else if(power == 0)
+ 				pulseState = hold;
+ 			break;
+ 		default:
+ 			pulseState = hold;
+ 			break;
+ 	}
 	switch(pulseState) // actions
 	{
 		case hold:
@@ -139,7 +209,10 @@ int degreeConversion(unsigned short temperatureSensor, unsigned short temperatur
 		default:
 			break;
 	}
-@@ -189,29 +199,32 @@ void Temperature_Tick()
+ }
+ void Temperature_Tick()
+ {
+ 	switch(tempState) // transitions
 	{
 		case wait:
 			if(power == 0)
@@ -176,7 +249,10 @@ int degreeConversion(unsigned short temperatureSensor, unsigned short temperatur
 		default:
 			break;
 	}
-@@ -222,7 +235,7 @@ void Reflectance_Task()
+ }
+ void Reflectance_Task()
+ {
+ 	state = read;
 	for(;;)
 	{
 		Reflectance_Tick();
@@ -185,7 +261,8 @@ int degreeConversion(unsigned short temperatureSensor, unsigned short temperatur
 	}
 }
 void Pulse_Task()
-@@ -231,17 +244,17 @@ void Pulse_Task()
+ {
+ 	pulseState = hold;
 	for(;;)
 	{
 		Pulse_Tick();
@@ -206,7 +283,8 @@ void Temperature_Task()
 	}
 }
 void USART_Task()
-@@ -250,7 +263,7 @@ void USART_Task()
+ {
+ 	usartState = wait;
 	for(;;)
 	{
 		USART_Tick();
@@ -215,7 +293,11 @@ void USART_Task()
 	}
 }
 void StartFinalPulse(unsigned portBASE_TYPE Priority)
-@@ -262,14 +275,14 @@ void StartFinalPulse(unsigned portBASE_TYPE Priority)
+ {
+ 	xTaskCreate(Reflectance_Task, (signed portCHAR *) "Reflectance_Task", configMINIMAL_STACK_SIZE, NULL, Priority, NULL);
+ 	xTaskCreate(Pulse_Task, (signed portCHAR *) "Pulse_Task", configMINIMAL_STACK_SIZE, NULL, Priority, NULL);
+ 	xTaskCreate(Temperature_Task, (signed portCHAR *) "Temperature_Task", configMINIMAL_STACK_SIZE, NULL, Priority, NULL);
+ 	xTaskCreate(USART_Task, (signed portCHAR *) "USART_Task", configMINIMAL_STACK_SIZE, NULL, Priority, NULL);
 }
 int main(void)
 {
@@ -235,3 +317,6 @@ int main(void)
 	//USART
 	DDRD = 0xFF; PORTD = 0x00;
 	
+ 	StartFinalPulse(1);
+ 	vTaskStartScheduler();
+ }
