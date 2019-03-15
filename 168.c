@@ -1,3 +1,5 @@
+//most code taken from lecture slide (tempalte)
+
 module xor8 (xout, xin1, xin2); output [7:0] xout;
  input [7:0] xin1,xin2;
 
@@ -8,7 +10,10 @@ xor(xout[7], xin1[7], xin2[7]),
 (xout[3], xin1[3], xin2[3]),
 (xout[2], xin1[2], xin2[2]),
 (xout[1], xin1[1], xin2[1]),
-(xout[0], xin1[0], xin2[0]); endmodule
+(xout[0], xin1[0], xin2[0]);
+
+endmodule
+
 module deMux (outVector, a, b, c, d, enable); input [7:0] outVector;
 input	a, b, c, d, enable;
 wire	m11, m10, m8, m6, m5, m4, m2; and
@@ -20,7 +25,9 @@ wire	m11, m10, m8, m6, m5, m4, m2; and
 (m5,  ~a,  b,  c, ~d, enable),
 (m4,   a, ~b,  c, ~d, enable),
 (m2,   a,  b, ~c, ~d, enable);
-assign outVector = {m11, m10, m9, m8, m6, m5, m4, m2}; endmodule
+assign outVector = {m11, m10, m9, m8, m6, m5, m4, m2};
+
+endmodule
 
 module hamDecode (vIn, valueOut, error); input [12:0] vIn;
 output [7:0] valueOut; output error;
@@ -37,7 +44,6 @@ xor8 x1 (valueOut, bitFlippers, {vIn[11], vIn[10], vIn[9], vIn[8],
 vIn[6], vIn[5], vIn[4], vIn[2]});
 assign error = ~^vIn & (c1 | c2 | c4 | c8); endmodule
 
- 
 module hamEncode (vIn, valueOut); input [7:0] vIn;
 output [12:0]  valueOut; wire	h1, h2, h4, h8, hA; wire [11:0]	preParity;
 xor	(h1, vIn[0], vIn[1], vIn[3], vIn[4], vIn[6]),
@@ -46,9 +52,6 @@ xor	(h1, vIn[0], vIn[1], vIn[3], vIn[4], vIn[6]),
 (h8, vIn[4], vIn[5], vIn[6], vIn[7]);
 assign preParity = {vIn[7:4], h8, vIn[3:1], h4, vIn[0], h2, h1}; assign hA = ^preParity;
 assign valueOut = {hA, preParity}; endmodule
-
-// hamDecode, Brandon Lu blu006@ucr.edu
-
 
 module testHam(); reg [7:0] original;
 wire [7:0] regenerated;
@@ -68,4 +71,8 @@ end // initial begin
 hamEncode hIn (original, encoded);
 hamDecode hOut (messedUp, regenerated, error);
 
-assign messedUp = encoded ^ (2 ** messUp) ^ (2 ** messUpAgn); endmodule
+assign messedUp = encoded ^ (2 ** messUp) ^ (2 ** messUpAgn);
+
+endmodule
+ 
+//most code taken from lecture slides (template)
