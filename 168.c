@@ -55,7 +55,8 @@ assign valueOut = {hA, preParity}; endmodule
 
 module testHam(); reg [7:0] original;
 wire [7:0] regenerated;
-wire [12:0] encoded, messedUp; wire	error;
+wire [12:0] encoded, messedUp; 
+wire	error;
 reg [3:0] messUp;
 reg [3:0] messUpAgn; integer	seed;
 initial begin seed = 53; forever begin
